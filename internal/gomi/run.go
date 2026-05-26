@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+
+	"github.com/fchimpan/gomi/internal/scanner"
 )
 
 // ExitError carries a specific process exit code alongside an error.
@@ -18,10 +20,6 @@ type ExitError struct {
 func (e *ExitError) Error() string { return e.Err.Error() }
 func (e *ExitError) Unwrap() error { return e.Err }
 
-// Run is the testable entry point. main.go is a thin wrapper that wires
-// os.Args / os.Stdin / os.Stdout / os.Stderr into here.
-//
-// args excludes the program name (pass os.Args[1:]).
 func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	switch len(args) {
 	case 0:
@@ -34,8 +32,6 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 }
 
 func runPrompt(stdin io.Reader, stdout, stderr io.Writer) error {
-	// TODO: REPL — implement after the Scanner is in place.
-
 	sc := bufio.NewScanner(stdin)
 	for {
 		fmt.Fprint(stdout, "> ")
@@ -43,15 +39,26 @@ func runPrompt(stdin io.Reader, stdout, stderr io.Writer) error {
 			break
 		}
 		line := sc.Text()
-		if _, err := fmt.Fprintln(stdout, "TODO: evaluate", line); err != nil {
-			fmt.Fprintln(stderr, "gomi: error writing to stdout:", err)
+		if err := run(line, stdout); err != nil {
+			return err
 		}
-
 	}
 	return sc.Err()
 }
 
 func runFile(path string, stdout, stderr io.Writer) error {
 	// TODO: read file & evaluate — implement after the Scanner is in place.
+	return nil
+}
+
+func run(source string, out io.Writer) error {
+	sc := scanner.New(source)
+	tokens, err := sc.ScanTokens()
+	if err != nil {
+		return err
+	}
+	for _, tok := range tokens {
+		fmt.Fprintln(out, tok)
+	}
 	return nil
 }
