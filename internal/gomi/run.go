@@ -40,7 +40,7 @@ func runPrompt(stdin io.Reader, stdout, stderr io.Writer) error {
 		}
 		line := sc.Text()
 		if err := run(line, stdout); err != nil {
-			return err
+			fmt.Fprintln(stderr, err)
 		}
 	}
 	return sc.Err()

@@ -82,6 +82,25 @@ func (t Type) String() string {
 	return fmt.Sprintf("Type(%d)", int(t))
 }
 
+var Keywords = map[string]Type{
+	"and":    And,
+	"class":  Class,
+	"else":   Else,
+	"false":  False,
+	"fun":    Fun,
+	"for":    For,
+	"if":     If,
+	"nil":    Nil,
+	"or":     Or,
+	"print":  Print,
+	"return": Return,
+	"super":  Super,
+	"this":   This,
+	"true":   True,
+	"var":    Var,
+	"while":  While,
+}
+
 type Token struct {
 	Type    Type
 	Lexeme  string

@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/fchimpan/gomi/internal/token"
 )
@@ -28,6 +29,7 @@ func (s *Scanner) ScanTokens() ([]token.Token, error) {
 			return nil, err
 		}
 	}
+	s.tokens = append(s.tokens, token.New(token.EOF, "", nil, s.line))
 	return s.tokens, nil
 }
 
@@ -93,8 +95,22 @@ func (s *Scanner) scanToken() error {
 	case ' ', '\r', '\t':
 	case '\n':
 		s.line++
+	case '"':
+		if err := s.string(); err != nil {
+			return err
+		}
 	default:
-		fmt.Printf("Unexpected character: %c at line %d\n", c, s.line)
+		if isDigit(c) {
+			if err := s.number(); err != nil {
+				return err
+			}
+		} else if isAlpha(c) {
+			if err := s.identifier(); err != nil {
+				return err
+			}
+		} else {
+			return fmt.Errorf("Unexpected character '%c' at line %d", c, s.line)
+		}
 	}
 	return nil
 }
@@ -106,8 +122,12 @@ func (s *Scanner) advance() byte {
 }
 
 func (s *Scanner) addToken(t token.Type) {
+	s.addTokenLiteral(t, nil)
+}
+
+func (s *Scanner) addTokenLiteral(t token.Type, literal any) {
 	text := s.source[s.start:s.current]
-	s.tokens = append(s.tokens, token.Token{Type: t, Lexeme: text, Line: s.line})
+	s.tokens = append(s.tokens, token.New(t, text, literal, s.line))
 }
 
 func (s *Scanner) match(expected byte) bool {
@@ -126,4 +146,67 @@ func (s *Scanner) peek() byte {
 		return 0
 	}
 	return s.source[s.current]
+}
+
+func (s *Scanner) peekNext() byte {
+	if s.current+1 >= len(s.source) {
+		return 0
+	}
+	return s.source[s.current+1]
+}
+
+func (s *Scanner) string() error {
+	for s.peek() != '"' && !s.isAtEnd() {
+		if s.peek() == '\n' {
+			s.line++
+		}
+		s.advance()
+	}
+	if s.isAtEnd() {
+		return fmt.Errorf("Unterminated string at line %d", s.line)
+	}
+	s.advance() // Consume the closing "
+	value := s.source[s.start+1 : s.current-1]
+	s.addTokenLiteral(token.String, value)
+	return nil
+}
+
+func isDigit(c byte) bool {
+	return c >= '0' && c <= '9'
+}
+
+func (s *Scanner) number() error {
+	for isDigit(s.peek()) {
+		s.advance()
+	}
+	if s.peek() == '.' && isDigit(s.peekNext()) {
+		s.advance() // Consume the '.'
+		for isDigit(s.peek()) {
+			s.advance()
+		}
+	}
+	lexeme := s.source[s.start:s.current]
+	value, err := strconv.ParseFloat(lexeme, 64)
+	if err != nil {
+		return fmt.Errorf("invalid number %q at line %d: %w", lexeme, s.line, err)
+	}
+	s.addTokenLiteral(token.Number, value)
+	return nil
+}
+
+func isAlpha(c byte) bool {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
+}
+
+func (s *Scanner) identifier() error {
+	for isAlpha(s.peek()) || isDigit(s.peek()) {
+		s.advance()
+	}
+	lexeme := s.source[s.start:s.current]
+	t, ok := token.Keywords[lexeme]
+	if !ok {
+		t = token.Identifier
+	}
+	s.addToken(t)
+	return nil
 }
