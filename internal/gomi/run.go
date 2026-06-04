@@ -10,8 +10,7 @@ import (
 )
 
 // ExitError carries a specific process exit code alongside an error.
-// Codes follow <sysexits.h>, matching the jlox convention from
-// Crafting Interpreters (64 = usage, 65 = compile, 70 = runtime).
+// Codes follow <sysexits.h>: 64 = usage, 65 = compile, 70 = runtime.
 type ExitError struct {
 	Code int
 	Err  error

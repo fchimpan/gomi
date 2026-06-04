@@ -9,7 +9,7 @@ import (
 
 func TestRun_TooManyArgs(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	err := Run([]string{"a.lox", "b.lox"}, strings.NewReader(""), &stdout, &stderr)
+	err := Run([]string{"a", "b"}, strings.NewReader(""), &stdout, &stderr)
 
 	if err == nil {
 		t.Fatal("expected error, got nil")
