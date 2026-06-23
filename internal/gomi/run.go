@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/fchimpan/gomi/internal/ast"
+	"github.com/fchimpan/gomi/internal/parser"
 	"github.com/fchimpan/gomi/internal/scanner"
 )
 
@@ -56,8 +58,11 @@ func run(source string, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	for _, tok := range tokens {
-		fmt.Fprintln(out, tok)
+	p := parser.New(tokens)
+	expr, err := p.Parse()
+	if err != nil {
+		return err
 	}
+	fmt.Fprintln(out, ast.Print(expr))
 	return nil
 }
